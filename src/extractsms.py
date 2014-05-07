@@ -36,7 +36,7 @@ def avg_collection(messages):
     
     total = len(longest.message)
     count = 1
-    msg_lengths = []
+    msg_lengths = [longest.message_length]
     for msg in messages:
         total += msg.message_length
         count += 1
