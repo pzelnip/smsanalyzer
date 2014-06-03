@@ -3,7 +3,7 @@ from collections import namedtuple, Counter
 from itertools import ifilter
 from datetime import datetime 
 import re
-
+from glob import glob
 
 # detect number of distinct conversations by comparing timestamps between
 # messsages.  If the difference is greater than say 15 minutes, consider it
@@ -150,16 +150,16 @@ def build_tuples(root):
     msg_types = {"1" : RECEIVED,
                  "2" : SENT
                  }
-    result = []
+    result = set([])
     for child in root:
         attrs = child.attrib
-        result.append(SMSMsg(attrs['address'],
+        result.add(SMSMsg(attrs['address'],
                              msg_types.get(attrs['type'], UNKNOWN),
                              attrs['body'],
                              attrs['time'],
                              datetime.fromtimestamp(int(attrs['date']) / 1000),
                              len(attrs['body']),
-                             tokenize(attrs['body']))
+                             tuple(tokenize(attrs['body'])))
                       )
     return result
 
@@ -226,14 +226,19 @@ def dump_histogram_data(all_metrics, sent_metrics, recv_metrics):
     print result
     print len(result)
 
+
+def parse_messages():
+    result = set()
+    for fname in glob("./*.xml"):
+        tree = ET.parse(fname)
+        root = tree.getroot()
+        result = result.union(build_tuples(root))
+    return result
+
     
 def main():
-    fname = "sms.xml"
-    tree = ET.parse(fname)
-    root = tree.getroot()
-
-    result = build_tuples(root)
-
+    result = parse_messages()
+    
     to_adam_text = ifilter(lambda x : x.type == RECEIVED, result)
     from_adam_text = ifilter(lambda x : x.type == SENT, result)
 
