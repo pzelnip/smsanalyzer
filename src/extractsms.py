@@ -12,7 +12,7 @@ from glob import glob
 # punchcard for time of messages ala Githubs commit punchcard graph
 
 
-SMSMsg = namedtuple("SMSMsg", ['phone_number', 'type', 'message', 'date', 'timestamp', 'message_length', 'tokens'])
+SMSMsg = namedtuple("SMSMsg", ['phone_number', 'type', 'message', 'date', 'orig_timestamp', 'timestamp', 'message_length', 'tokens'])
 Metrics = namedtuple("Metrics", ['total_messages', 'average_length', 'longest', 'shortest', 'histogram', 'word_counts' ]) # vocabulary #normalized_vocab #avg_word_length #message_length_histogram
 
 # message types
@@ -159,6 +159,7 @@ def build_tuples(root):
                              msg_types.get(attrs['type'], UNKNOWN),
                              attrs['body'],
                              attrs['time'],
+                             attrs['date'],
                              datetime.fromtimestamp(int(attrs['date']) / 1000),
 #                              int(attrs['date']) / 1000,
                              len(attrs['body']),
@@ -196,10 +197,10 @@ Longest Message was %s characters: %s
 Shortest Message was %s characters: %s
 Word Counts: %s
 ''' % (metrics.total_messages,
-       metrics.average_length,
-       metrics.longest.message_length, metrics.longest.message, 
-       metrics.shortest.message_length, metrics.shortest.message,
-       metrics.word_counts.most_common())
+        metrics.average_length,
+        metrics.longest.message_length, metrics.longest.message.encode('ascii', 'replace'), 
+        metrics.shortest.message_length, metrics.shortest.message.encode('ascii', 'replace'),
+        metrics.word_counts.most_common())
 
 
 def histogram_d3_data(metrics, max_length=100):
@@ -242,7 +243,7 @@ def parse_messages():
 def dump_texts(result):
     with open(MSG_FILE, "w") as fobj:
         for message in sorted(result, key=lambda item: item.timestamp):
-            fobj.write("%s %s: %s\n" % (message.timestamp, message.type, message.message))
+            fobj.write(u"%s %s: %s\n" % (message.timestamp, message.type, message.message.encode('ascii', 'replace')))
 
 
 def main():
@@ -254,7 +255,6 @@ def main():
     recv_metrics = avg_collection(to_adam_text)
     sent_metrics = avg_collection(from_adam_text)
     all_metrics = avg_collection(iter(result))
-    
     print("Adam's sent messages: %s" % pprint_metrics(sent_metrics))
     print("Adam's received messages: %s" % pprint_metrics(recv_metrics))
     print("All messages: %s" % pprint_metrics(all_metrics))
@@ -262,6 +262,8 @@ def main():
     dump_histogram_data(all_metrics, sent_metrics, recv_metrics)
     
     dump_texts(result)
+    
+
 if __name__ == "__main__":
     main()
 
