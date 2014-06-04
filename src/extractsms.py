@@ -16,9 +16,11 @@ SMSMsg = namedtuple("SMSMsg", ['phone_number', 'type', 'message', 'date', 'times
 Metrics = namedtuple("Metrics", ['total_messages', 'average_length', 'longest', 'shortest', 'histogram', 'word_counts' ]) # vocabulary #normalized_vocab #avg_word_length #message_length_histogram
 
 # message types
-RECEIVED = 1
-SENT = 2
-UNKNOWN = 3
+RECEIVED = "recv"
+SENT = "sent"
+UNKNOWN = "unkn"
+
+MSG_FILE = "messages.txt"
 
 # Stop words to omit from word counts, mostly taken from:
 # http://www.ranks.nl/stopwords
@@ -158,6 +160,7 @@ def build_tuples(root):
                              attrs['body'],
                              attrs['time'],
                              datetime.fromtimestamp(int(attrs['date']) / 1000),
+#                              int(attrs['date']) / 1000,
                              len(attrs['body']),
                              tuple(tokenize(attrs['body'])))
                       )
@@ -235,7 +238,13 @@ def parse_messages():
         result = result.union(build_tuples(root))
     return result
 
-    
+
+def dump_texts(result):
+    with open(MSG_FILE, "w") as fobj:
+        for message in sorted(result, key=lambda item: item.timestamp):
+            fobj.write("%s %s: %s\n" % (message.timestamp, message.type, message.message))
+
+
 def main():
     result = parse_messages()
     
@@ -252,6 +261,7 @@ def main():
     
     dump_histogram_data(all_metrics, sent_metrics, recv_metrics)
     
+    dump_texts(result)
 if __name__ == "__main__":
     main()
 
